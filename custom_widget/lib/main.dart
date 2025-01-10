@@ -74,7 +74,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
     // Navegar a la vista viewDrive() sin pasar parámetros
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ViewDrive()),
+      MaterialPageRoute(builder: (context) => const ViewDrive(folderPath: 'assets/data')),
     );
   }
 

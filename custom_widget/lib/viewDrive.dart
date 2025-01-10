@@ -1,37 +1,69 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ViewDrive extends StatefulWidget {
+  final String folderPath;
+
+  const ViewDrive({super.key, required this.folderPath});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Proxmox Drive',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: const ViewDrive(),
-    );
-  }
+  _ViewDriveState createState() => _ViewDriveState();
 }
 
-class ViewDrive extends StatelessWidget {
-  const ViewDrive({super.key});
+class _ViewDriveState extends State<ViewDrive> {
+  late Directory directory;
+  late List<FileSystemEntity> filesAndFolders;
+
+  @override
+  void initState() {
+    super.initState();
+    directory = Directory(widget.folderPath);
+    print(widget.folderPath);
+    _loadFiles();
+  }
+
+  void _loadFiles() {
+    if (directory.existsSync()) {
+      setState(() {
+        filesAndFolders = directory.listSync();
+      });
+      
+    } else {
+      setState(() {
+        filesAndFolders = [];
+      });
+    }
+
+    print(filesAndFolders);
+  }
+
+  IconData _getIconForFile(FileSystemEntity entity) {
+    if (entity is Directory) {
+      return Icons.folder;
+    } else if (entity is File) {
+      String extension = entity.path.split('.').last.toLowerCase();
+      switch (extension) {
+        case 'zip':
+          return Icons.archive;
+        case 'json':
+          return Icons.description;
+        default:
+          return Icons.insert_drive_file;
+      }
+    }
+    return Icons.help_outline;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Proxmox Drive'),
+        title: Text('Proxmox Drive - ${directory.path.split('/').last}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {},
+            onPressed: _loadFiles,
           ),
           IconButton(
             icon: const Icon(Icons.power_settings_new),
@@ -83,9 +115,10 @@ class ViewDrive extends StatelessWidget {
                             icon: const Icon(Icons.arrow_back),
                             onPressed: () {},
                           ),
-                          const Text(
-                            '"carpeta A"',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          Text(
+                            directory.path.split('/').last,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -105,69 +138,50 @@ class ViewDrive extends StatelessWidget {
 
                 // File and Folder List
                 Expanded(
-                  child: ListView(
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.folder),
-                        title: const Text('carpeta A1'),
-                        onTap: () {},
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.folder),
-                        title: const Text('treballs'),
-                        onTap: () {},
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.archive),
-                        title: const Text('dades.zip'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.download),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.info_outline),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.fullscreen),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () {},
-                            ),
-                          ],
-                        ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.description),
-                        title: const Text('biblio.json'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.download),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.info_outline),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.fullscreen),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () {},
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  child: ListView.builder(
+                    itemCount: filesAndFolders.length,
+                    itemBuilder: (context, index) {
+                      final entity = filesAndFolders[index];
+                      return ListTile(
+                        leading: Icon(_getIconForFile(entity)),
+                        title: Text(entity.path.split('/').last),
+                        onTap: () {
+                          if (entity is Directory) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ViewDrive(
+                                  folderPath: entity.path,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        trailing: entity is File
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.download),
+                                    onPressed: () {},
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.info_outline),
+                                    onPressed: () {},
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.fullscreen),
+                                    onPressed: () {},
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: () {},
+                                  ),
+                                ],
+                              )
+                            : null,
+                      );
+                    },
                   ),
                 ),
               ],
