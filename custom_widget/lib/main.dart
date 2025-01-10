@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'viewDrive.dart'; // Importa la página de detalles
+
 
 void main() {
   runApp(const MyApp());
@@ -69,13 +71,13 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
   }
 
   void _connect() {
-    if (_selectedServerIndex != null) {
-      final selectedServer = _servers[_selectedServerIndex!];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Connecting to ${selectedServer['name']}...')),
-      );
-    }
+    // Navegar a la vista viewDrive() sin pasar parámetros
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ViewDrive()),
+    );
   }
+
 
   void _clearInputs() {
     _nameController.clear();
@@ -86,6 +88,8 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
 
   @override
   Widget build(BuildContext context) {
+
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Server Connection'),
