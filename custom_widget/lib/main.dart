@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:custom_widget/conection.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,6 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Server Connection',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -36,6 +40,28 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
 
   int? _selectedServerIndex;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadServers();
+  }
+
+  Future<void> _saveServers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final serversJson = json.encode(_servers);
+    await prefs.setString('servers', serversJson);
+  }
+
+  Future<void> _loadServers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final serversJson = prefs.getString('servers');
+    if (serversJson != null) {
+      setState(() {
+        _servers.addAll(List<Map<String, dynamic>>.from(json.decode(serversJson)));
+      });
+    }
+  }
+
   void _addServer() {
     setState(() {
       _servers.add({
@@ -47,6 +73,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
       });
       _clearInputs();
     });
+    _saveServers();
   }
 
   void _deleteServer() {
@@ -56,6 +83,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
         _clearInputs();
         _selectedServerIndex = null;
       });
+      _saveServers();
     }
   }
 
@@ -65,15 +93,36 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
         _servers[_selectedServerIndex!]['favorite'] =
             !_servers[_selectedServerIndex!]['favorite'];
       });
+      _saveServers();
     }
   }
 
-  void _connect() {
+  void _connect() async {
     if (_selectedServerIndex != null) {
       final selectedServer = _servers[_selectedServerIndex!];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Connecting to ${selectedServer['name']}...')),
+      final connectionManager = ServerConnectionManager();
+
+      connectionManager.setConnection(
+        selectedServer['name'],
+        selectedServer['server'],
+        int.parse(selectedServer['port']),
+        selectedServer['key'],
       );
+
+      try {
+        final success = await connectionManager.connect();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? 'Connected to ${selectedServer['name']}!'
+                : 'Failed to connect to ${selectedServer['name']}!'),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
@@ -92,7 +141,6 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
       ),
       body: Row(
         children: [
-          // Left Panel: Server List
           Expanded(
             flex: 3,
             child: ListView.builder(
@@ -121,7 +169,6 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
             ),
           ),
           const VerticalDivider(width: 1),
-          // Right Panel: Connection Form
           Expanded(
             flex: 7,
             child: Padding(
