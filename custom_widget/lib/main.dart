@@ -101,48 +101,49 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
     }
   }
 
-  void _connect() {
-    // Navegar a la vista viewDrive() sin pasar parámetros
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ViewDrive(folderPath: 'assets/data')),
-    );
-  // void _connect() async {
-  //   if (_selectedServerIndex != null) {
-  //     final selectedServer = _servers[_selectedServerIndex!];
+    
+  void _connect() async {
+    if (_selectedServerIndex != null) {
+      final selectedServer = _servers[_selectedServerIndex!];
 
-  //     if (selectedServer['name'] == '' ||
-  //         selectedServer['username'] == '' ||
-  //         selectedServer['server'] == '' ||
-  //         selectedServer['port'] == '' ||
-  //         selectedServer['key'] == '') {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: const Text('Please fill in all the fields')),
-  //       );
-  //       return;
-  //     }
+      if (selectedServer['name'] == '' ||
+          selectedServer['username'] == '' ||
+          selectedServer['server'] == '' ||
+          selectedServer['port'] == '' ||
+          selectedServer['key'] == '') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text('Please fill in all the fields')),
+        );
+        return;
+      }
 
-  //     final connectionManager = ServerConnectionManager();
+      final connectionManager = ServerConnectionManager();
 
-  //     connectionManager.setConnection(
-  //       selectedServer['username'],
-  //       selectedServer['server'],
-  //       int.parse(selectedServer['port']),
-  //       selectedServer['key'], 
-  //     );
+      connectionManager.setConnection(
+        selectedServer['username'],
+        selectedServer['server'],
+        int.parse(selectedServer['port']),
+        selectedServer['key'], 
+      );
 
-  //     try {
-  //       await connectionManager.connect();
+      try {
+        await connectionManager.connect();
 
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Connected to ${selectedServer['name']}!')),
-  //       );
-  //     } catch (e) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Failed to connect. Error: $e')),
-  //       );
-  //     }
-  //   }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Connected to ${selectedServer['name']}!')),
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ViewDrive(folderPath: 'assets/data')),
+        );
+
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to connect. Error: $e')),
+        );
+      }
+    }
   }
 
 
