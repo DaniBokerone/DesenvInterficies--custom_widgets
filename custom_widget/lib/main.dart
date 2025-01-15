@@ -34,6 +34,7 @@ class ServerConnectionPage extends StatefulWidget {
 class _ServerConnectionPageState extends State<ServerConnectionPage> {
   final List<Map<String, dynamic>> _servers = [];
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _serverController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
   final TextEditingController _keyController = TextEditingController();
@@ -66,6 +67,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
     setState(() {
       _servers.add({
         'name': _nameController.text,
+        'username': _usernameController.text,
         'server': _serverController.text,
         'port': _portController.text,
         'key': _keyController.text,
@@ -100,27 +102,36 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
   void _connect() async {
     if (_selectedServerIndex != null) {
       final selectedServer = _servers[_selectedServerIndex!];
+
+      if (selectedServer['name'] == '' ||
+          selectedServer['username'] == '' ||
+          selectedServer['server'] == '' ||
+          selectedServer['port'] == '' ||
+          selectedServer['key'] == '') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text('Please fill in all the fields')),
+        );
+        return;
+      }
+
       final connectionManager = ServerConnectionManager();
 
       connectionManager.setConnection(
-        selectedServer['name'],
+        selectedServer['username'],
         selectedServer['server'],
         int.parse(selectedServer['port']),
-        selectedServer['key'],
+        selectedServer['key'], 
       );
 
       try {
-        final success = await connectionManager.connect();
+        await connectionManager.connect();
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success
-                ? 'Connected to ${selectedServer['name']}!'
-                : 'Failed to connect to ${selectedServer['name']}!'),
-          ),
+          SnackBar(content: Text('Connected to ${selectedServer['name']}!')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Failed to connect. Error: $e')),
         );
       }
     }
@@ -128,6 +139,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
 
   void _clearInputs() {
     _nameController.clear();
+    _usernameController.clear();
     _serverController.clear();
     _portController.clear();
     _keyController.clear();
@@ -148,8 +160,14 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
               itemBuilder: (context, index) {
                 final server = _servers[index];
                 return ListTile(
-                  title: Text(server['name']),
-                  subtitle: Text('${server['server']}:${server['port']}'),
+                  title: Text(
+                    server['name'],
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '${server['server']} : ${server['port']}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   trailing: Icon(
                     server['favorite'] ? Icons.star : Icons.star_border,
                     color: server['favorite'] ? Colors.yellow : Colors.grey,
@@ -159,6 +177,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
                     setState(() {
                       _selectedServerIndex = index;
                       _nameController.text = server['name'];
+                      _usernameController.text = server['username'];
                       _serverController.text = server['server'];
                       _portController.text = server['port'];
                       _keyController.text = server['key'];
@@ -185,6 +204,14 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
                   ),
                   const SizedBox(height: 16),
                   TextField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
                     controller: _serverController,
                     decoration: const InputDecoration(
                       labelText: 'Server',
@@ -204,7 +231,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
                   TextField(
                     controller: _keyController,
                     decoration: const InputDecoration(
-                      labelText: 'Connection Key',
+                      labelText: 'Private Key Path',
                       border: OutlineInputBorder(),
                     ),
                   ),
