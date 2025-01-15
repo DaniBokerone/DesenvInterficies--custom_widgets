@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'editable_text_field.dart';
 import '../viewDrive.dart';
+import 'server_control_widget.dart';
 
 class ListWithTitles extends StatefulWidget {
   final String folderPath;
@@ -86,12 +87,27 @@ class _ListWithTitlesState extends State<ListWithTitles> {
           ),
           onTap: () {
             if (entity is Directory) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ViewDrive(folderPath: entity.path),
-                ),
-              );
+              // Verifica si la carpeta es un servidor de tipo NodeJS o Java
+              bool isServer = _isServerFolder(entity);
+
+              if (isServer) {
+                // Si es un servidor, muestra el widget de control del servidor
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ServerControlWidget(directory: entity),
+                  ),
+                );
+              } else {
+                // Si no es un servidor, navega al explorador de archivos
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ViewDrive(folderPath: entity.path),
+                  ),
+                );
+              }
             }
           },
           trailing: entity is! Directory
@@ -108,35 +124,8 @@ class _ListWithTitlesState extends State<ListWithTitles> {
   }
 }
 
-// class ListWithTitles extends StatelessWidget {
-//   final List<FileSystemEntity> filesAndFolders;
-
-//   const ListWithTitles({required this.filesAndFolders, super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ListView.builder(
-//       itemCount: filesAndFolders.length,
-//       itemBuilder: (context, index) {
-//         final entity = filesAndFolders[index];
-//         final entityName = entity.path.split('\\').last;
-//         return ListTile(
-//           leading: Icon(
-//             entity is Directory ? Icons.folder : Icons.insert_drive_file,
-//           ),
-//           title: Text(entityName),
-          // onTap: () {
-          //   if (entity is Directory) {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //         builder: (context) => ViewDrive(folderPath: entityName),
-          //       ),
-          //     );
-          //   }
-//           },
-//         );
-//       },
-//     );
-//   }
-// }
+bool _isServerFolder(Directory directory) {
+  // Aquí verificas si la carpeta contiene archivos o características de un servidor NodeJS o Java
+  final folderName = directory.path.split('/').last.toLowerCase();
+  return folderName.contains('nodejs') || folderName.contains('java');
+}
