@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'package:custom_widget/conection.dart';
 import 'package:flutter/material.dart';
 import 'viewDrive.dart'; // Importa la página de detalles
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'custom_painters/selected_item_painter.dart'; // Importamos el CustomPainter
 
 void main() {
   runApp(const MyApp());
@@ -13,6 +16,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Server Connection',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -32,16 +36,40 @@ class ServerConnectionPage extends StatefulWidget {
 class _ServerConnectionPageState extends State<ServerConnectionPage> {
   final List<Map<String, dynamic>> _servers = [];
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _serverController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
   final TextEditingController _keyController = TextEditingController();
 
   int? _selectedServerIndex;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadServers();
+  }
+
+  Future<void> _saveServers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final serversJson = json.encode(_servers);
+    await prefs.setString('servers', serversJson);
+  }
+
+  Future<void> _loadServers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final serversJson = prefs.getString('servers');
+    if (serversJson != null) {
+      setState(() {
+        _servers.addAll(List<Map<String, dynamic>>.from(json.decode(serversJson)));
+      });
+    }
+  }
+
   void _addServer() {
     setState(() {
       _servers.add({
         'name': _nameController.text,
+        'username': _usernameController.text,
         'server': _serverController.text,
         'port': _portController.text,
         'key': _keyController.text,
@@ -49,6 +77,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
       });
       _clearInputs();
     });
+    _saveServers();
   }
 
   void _deleteServer() {
@@ -58,6 +87,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
         _clearInputs();
         _selectedServerIndex = null;
       });
+      _saveServers();
     }
   }
 
@@ -67,6 +97,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
         _servers[_selectedServerIndex!]['favorite'] =
             !_servers[_selectedServerIndex!]['favorite'];
       });
+      _saveServers();
     }
   }
 
@@ -76,11 +107,48 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
       context,
       MaterialPageRoute(builder: (context) => const ViewDrive(folderPath: 'assets/data')),
     );
+  // void _connect() async {
+  //   if (_selectedServerIndex != null) {
+  //     final selectedServer = _servers[_selectedServerIndex!];
+
+  //     if (selectedServer['name'] == '' ||
+  //         selectedServer['username'] == '' ||
+  //         selectedServer['server'] == '' ||
+  //         selectedServer['port'] == '' ||
+  //         selectedServer['key'] == '') {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: const Text('Please fill in all the fields')),
+  //       );
+  //       return;
+  //     }
+
+  //     final connectionManager = ServerConnectionManager();
+
+  //     connectionManager.setConnection(
+  //       selectedServer['username'],
+  //       selectedServer['server'],
+  //       int.parse(selectedServer['port']),
+  //       selectedServer['key'], 
+  //     );
+
+  //     try {
+  //       await connectionManager.connect();
+
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Connected to ${selectedServer['name']}!')),
+  //       );
+  //     } catch (e) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Failed to connect. Error: $e')),
+  //       );
+  //     }
+  //   }
   }
 
 
   void _clearInputs() {
     _nameController.clear();
+    _usernameController.clear();
     _serverController.clear();
     _portController.clear();
     _keyController.clear();
@@ -96,36 +164,48 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
       ),
       body: Row(
         children: [
-          // Left Panel: Server List
           Expanded(
             flex: 3,
             child: ListView.builder(
               itemCount: _servers.length,
               itemBuilder: (context, index) {
                 final server = _servers[index];
-                return ListTile(
-                  title: Text(server['name']),
-                  subtitle: Text('${server['server']}:${server['port']}'),
-                  trailing: Icon(
-                    server['favorite'] ? Icons.star : Icons.star_border,
-                    color: server['favorite'] ? Colors.yellow : Colors.grey,
-                  ),
-                  selected: index == _selectedServerIndex,
+                return GestureDetector(
                   onTap: () {
                     setState(() {
                       _selectedServerIndex = index;
                       _nameController.text = server['name'];
+                      _usernameController.text = server['username'];
                       _serverController.text = server['server'];
                       _portController.text = server['port'];
                       _keyController.text = server['key'];
                     });
                   },
+                  child: CustomPaint(
+                    painter: SelectedItemPainter(
+                      isSelected: index == _selectedServerIndex,
+                    ),
+                    child: ListTile(
+                      title: Text(
+                        server['name'],
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '${server['server']} : ${server['port']}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: Icon(
+                        server['favorite'] ? Icons.star : Icons.star_border,
+                        color: server['favorite'] ? Colors.yellow : Colors.grey,
+                      ),
+                      selected: index == _selectedServerIndex,
+                    ),
+                  ),
                 );
               },
             ),
           ),
           const VerticalDivider(width: 1),
-          // Right Panel: Connection Form
           Expanded(
             flex: 7,
             child: Padding(
@@ -137,6 +217,14 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
                     controller: _nameController,
                     decoration: const InputDecoration(
                       labelText: 'Connection Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -161,7 +249,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
                   TextField(
                     controller: _keyController,
                     decoration: const InputDecoration(
-                      labelText: 'Connection Key',
+                      labelText: 'Private Key Path',
                       border: OutlineInputBorder(),
                     ),
                   ),
