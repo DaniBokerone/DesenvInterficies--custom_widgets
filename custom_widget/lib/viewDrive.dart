@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-
+import 'widgets/list_with_titles.dart';
 
 class ViewDrive extends StatefulWidget {
   final String folderPath;
@@ -13,61 +13,31 @@ class ViewDrive extends StatefulWidget {
 
 class _ViewDriveState extends State<ViewDrive> {
   late Directory directory;
-  late List<FileSystemEntity> filesAndFolders;
 
   @override
   void initState() {
     super.initState();
     directory = Directory(widget.folderPath);
-    print(widget.folderPath);
-    _loadFiles();
-  }
-
-  void _loadFiles() {
-    if (directory.existsSync()) {
-      setState(() {
-        filesAndFolders = directory.listSync();
-      });
-      
-    } else {
-      setState(() {
-        filesAndFolders = [];
-      });
-    }
-
-    print(filesAndFolders);
-  }
-
-  IconData _getIconForFile(FileSystemEntity entity) {
-    if (entity is Directory) {
-      return Icons.folder;
-    } else if (entity is File) {
-      String extension = entity.path.split('.').last.toLowerCase();
-      switch (extension) {
-        case 'zip':
-          return Icons.archive;
-        case 'json':
-          return Icons.description;
-        default:
-          return Icons.insert_drive_file;
-      }
-    }
-    return Icons.help_outline;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Proxmox Drive - ${directory.path.split('/').last}'),
+        title: Text('Proxmox Drive - ${directory.path.split('\\').last}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadFiles,
+            onPressed: () {
+              // Simplemente recargar la vista si es necesario
+              setState(() {});
+            },
           ),
           IconButton(
             icon: const Icon(Icons.power_settings_new),
-            onPressed: () {},
+            onPressed: () {
+              // Acción para apagado, o lo que sea necesario
+            },
           ),
         ],
       ),
@@ -116,7 +86,7 @@ class _ViewDriveState extends State<ViewDrive> {
                             onPressed: () {},
                           ),
                           Text(
-                            directory.path.split('/').last,
+                            directory.path.split('\\').last,
                             style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.bold),
                           ),
@@ -138,51 +108,7 @@ class _ViewDriveState extends State<ViewDrive> {
 
                 // File and Folder List
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: filesAndFolders.length,
-                    itemBuilder: (context, index) {
-                      final entity = filesAndFolders[index];
-                      return ListTile(
-                        leading: Icon(_getIconForFile(entity)),
-                        title: Text(entity.path.split('/').last),
-                        onTap: () {
-                          if (entity is Directory) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ViewDrive(
-                                  folderPath: entity.path,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        trailing: entity is File
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.download),
-                                    onPressed: () {},
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.info_outline),
-                                    onPressed: () {},
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.fullscreen),
-                                    onPressed: () {},
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    onPressed: () {},
-                                  ),
-                                ],
-                              )
-                            : null,
-                      );
-                    },
-                  ),
+                  child: ListWithTitles(folderPath: directory.path),
                 ),
               ],
             ),
