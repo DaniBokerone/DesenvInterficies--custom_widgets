@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:custom_widget/conection.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'custom_painters/selected_item_painter.dart'; // Importamos el CustomPainter
 
 void main() {
   runApp(const MyApp());
@@ -159,20 +160,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
               itemCount: _servers.length,
               itemBuilder: (context, index) {
                 final server = _servers[index];
-                return ListTile(
-                  title: Text(
-                    server['name'],
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '${server['server']} : ${server['port']}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  trailing: Icon(
-                    server['favorite'] ? Icons.star : Icons.star_border,
-                    color: server['favorite'] ? Colors.yellow : Colors.grey,
-                  ),
-                  selected: index == _selectedServerIndex,
+                return GestureDetector(
                   onTap: () {
                     setState(() {
                       _selectedServerIndex = index;
@@ -183,6 +171,26 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
                       _keyController.text = server['key'];
                     });
                   },
+                  child: CustomPaint(
+                    painter: SelectedItemPainter(
+                      isSelected: index == _selectedServerIndex,
+                    ),
+                    child: ListTile(
+                      title: Text(
+                        server['name'],
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '${server['server']} : ${server['port']}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: Icon(
+                        server['favorite'] ? Icons.star : Icons.star_border,
+                        color: server['favorite'] ? Colors.yellow : Colors.grey,
+                      ),
+                      selected: index == _selectedServerIndex,
+                    ),
+                  ),
                 );
               },
             ),
