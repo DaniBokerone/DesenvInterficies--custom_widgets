@@ -1,1 +1,0 @@
-Hacer un AppData.dart como singelton y usar un notifyListener para cambair el estado de los canvas de las vistas.

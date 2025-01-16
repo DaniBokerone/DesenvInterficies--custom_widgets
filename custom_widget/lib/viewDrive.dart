@@ -1,11 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'widgets/list_with_titles.dart';
+import '../conection.dart';
+
+
 
 class ViewDrive extends StatefulWidget {
   final String folderPath;
+  final ServerConnectionManager connectionManager; // Conexión SSH
 
-  const ViewDrive({super.key, required this.folderPath});
+   const ViewDrive({super.key, required this.folderPath, required this.connectionManager});
 
   @override
   _ViewDriveState createState() => _ViewDriveState();
@@ -108,7 +112,7 @@ class _ViewDriveState extends State<ViewDrive> {
 
                 // File and Folder List
                 Expanded(
-                  child: ListWithTitles(folderPath: directory.path),
+                  child: ListWithTitles(folderPath: directory.path, connectionManager: widget.connectionManager),
                 ),
               ],
             ),

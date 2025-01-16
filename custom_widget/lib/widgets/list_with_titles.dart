@@ -3,19 +3,29 @@ import 'package:flutter/material.dart';
 import 'editable_text_field.dart';
 import '../viewDrive.dart';
 import 'server_control_widget.dart';
+import '../conection.dart';
 
 class ListWithTitles extends StatefulWidget {
   final String folderPath;
+  final ServerConnectionManager connectionManager;
 
-  ListWithTitles({required this.folderPath});
+  ListWithTitles({required this.folderPath, required this.connectionManager});
 
   @override
   _ListWithTitlesState createState() => _ListWithTitlesState();
 }
 
+class FileSystemEntityMock {
+  final String name;
+  final bool isDirectory;
+
+  FileSystemEntityMock({required this.name, required this.isDirectory});
+}
+
 class _ListWithTitlesState extends State<ListWithTitles> {
   late Directory directory;
-  late List<FileSystemEntity> filesAndFolders;
+  late List<FileSystemEntityMock>
+      filesAndFolders; // Cambiar a FileSystemEntityMock
   int? _selectedIndex;
 
   @override
@@ -25,54 +35,35 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     _loadFiles();
   }
 
-  // Cargar los archivos y carpetas del directorio
-  void _loadFiles() {
-    setState(() {
-      if (directory.existsSync()) {
-        filesAndFolders = directory.listSync();
-      } else {
-        filesAndFolders = [];
-      }
-    });
+ Future<void> _loadFiles() async {
+    try {
+      // Llama al método listFiles de connectionManager para obtener los archivos remotos
+      final remoteFiles = await widget.connectionManager.listFiles(widget.folderPath);
+
+      setState(() {
+        // Convierte los archivos remotos en un formato adecuado para mostrarlos
+        filesAndFolders = remoteFiles
+            .map((file) => FileSystemEntityMock(
+                  name: file['name']!,
+                  isDirectory: file['type'] == 'directory',
+                ))
+            .toList();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading files: $e')),
+      );
+    }
   }
-
-// void _loadFiles() async {
-//   try {
-//     final sshManager = SSHManager();
-
-//     // Cambia esta ruta al directorio remoto deseado
-//     final remotePath = widget.folderPath;
-
-//     // Llama al método listFiles del singleton
-//     final remoteFiles = await sshManager.listFiles(remotePath);
-
-//     setState(() {
-//       // Convierte los archivos remotos en un formato adecuado para mostrarlos
-//       filesAndFolders = remoteFiles
-//           .map((file) => FileSystemEntityMock(
-//                 name: file['name']!,
-//                 isDirectory: file['type'] == 'directory',
-//               ))
-//           .toList();
-//     });
-//   } catch (e) {
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       SnackBar(content: Text('Error loading files: $e')),
-//     );
-//   }
-// }
 
 
   // Renombrar un archivo o carpeta
-  Future<void> _renameFile(FileSystemEntity entity, String newName) async {
+  Future<void> _renameFile(FileSystemEntityMock entity, String newName) async {
     final newPath = '${directory.path}/$newName';
     print(newPath);
     try {
-      if (entity is File) {
-        await entity.rename(newPath);
-      } else if (entity is Directory) {
-        await entity.rename(newPath);
-      }
+      // Aquí debes manejar el renombrado de los archivos en el servidor remoto
+      // Implementa la lógica para renombrar en el servidor utilizando connectionManager o una librería adecuada.
       _loadFiles();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,19 +73,13 @@ class _ListWithTitlesState extends State<ListWithTitles> {
   }
 
   // Eliminar un archivo o carpeta
-  Future<void> _deleteFile(FileSystemEntity entity) async {
+  Future<void> _deleteFile(FileSystemEntityMock entity) async {
     try {
-      if (entity is File) {
-        await entity.delete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Archivo eliminado: ${entity.path}')),
-        );
-      } else if (entity is Directory) {
-        await entity.delete(recursive: true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Carpeta eliminada: ${entity.path}')),
-        );
-      }
+      // Aquí debes manejar la eliminación de los archivos en el servidor remoto
+      // Implementa la lógica para eliminar en el servidor utilizando connectionManager o una librería adecuada.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Archivo o carpeta eliminada: ${entity.name}')),
+      );
       _loadFiles(); // Actualiza la lista después de eliminar
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,22 +88,14 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     }
   }
 
-  void _downloadFile(FileSystemEntity entity) async {
+  void _downloadFile(FileSystemEntityMock entity) async {
     try {
-      if (entity is File) {
-        // Simula la lógica de descarga de un archivo
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Descargando archivo: ${entity.path}')),
-        );
-        // Aquí puedes implementar la lógica real de descarga,
-        // como copiar el archivo a otra ubicación o subirlo a un servidor.
-      } else if (entity is Directory) {
-        // Simula la lógica de descarga de una carpeta
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Descargando carpeta: ${entity.path}')),
-        );
-        // Implementa la lógica para manejar la descarga de carpetas.
-      }
+      // Simula la lógica de descarga de un archivo
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Descargando archivo: ${entity.name}')),
+      );
+      // Aquí puedes implementar la lógica real de descarga,
+      // como copiar el archivo a otra ubicación o subirlo a un servidor.
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error descargando: $e')),
@@ -126,26 +103,11 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     }
   }
 
-  void _showFileInfo(FileSystemEntity entity) {
+  void _showFileInfo(FileSystemEntityMock entity) {
     try {
       String info = '';
-
-      if (entity is File) {
-        // Obtener información del archivo
-        final fileSize = entity.lengthSync(); // Tamaño del archivo
-        final lastModified =
-            entity.lastModifiedSync(); // Fecha de última modificación
-        info = 'Archivo: ${entity.path}\n'
-            'Tamaño: ${fileSize} bytes\n'
-            'Última modificación: $lastModified';
-      } else if (entity is Directory) {
-        // Obtener información de la carpeta
-        final contentCount =
-            entity.listSync().length; // Número de elementos dentro
-        info = 'Carpeta: ${entity.path}\n'
-            'Elementos: $contentCount\n';
-      }
-
+      info = 'Nombre: ${entity.name}\n'
+          'Tipo: ${entity.isDirectory ? 'Carpeta' : 'Archivo'}';
       // Mostrar la información en un SnackBar o cualquier otro widget
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(info)),
@@ -157,6 +119,21 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     }
   }
 
+  // ********************************************
+  // Para renombrar un archivo
+// await connectionManager.renameFile('/ruta/remota/archivo.txt', 'nuevoNombre.txt');
+
+// // Para eliminar un archivo
+// await connectionManager.deleteFile('/ruta/remota/archivo.txt');
+
+// // Para descargar un archivo
+// await connectionManager.downloadFile('/ruta/remota/archivo.txt', '/ruta/local/archivo.txt');
+
+// // Para mostrar información de un archivo
+// final fileInfo = await connectionManager.showFileInfo('/ruta/remota/archivo.txt');
+// print(fileInfo);
+// ********************************************
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -164,17 +141,19 @@ class _ListWithTitlesState extends State<ListWithTitles> {
       itemBuilder: (context, index) {
         final entity = filesAndFolders[index];
         final isSelected = _selectedIndex == index;
+
         return GestureDetector(
           onTap: () {
             // Verifica si la carpeta es un servidor de tipo NodeJS o Java
             bool isServer = _isServerFolder(entity);
             if (isServer) {
-              directory = entity as Directory;
-              // Si es un servidor, muestra el widget de control del servidor ********
+              // Si es un servidor, muestra el widget de control del servidor
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ServerControlWidget(directory: entity),
+                  builder: (context) => ServerControlWidget(
+                      directory:
+                          Directory('${widget.folderPath}/${entity.name}')),
                 ),
               );
             } else {
@@ -185,23 +164,27 @@ class _ListWithTitlesState extends State<ListWithTitles> {
             }
           },
           onDoubleTap: () {
-            if (entity is Directory) {
+            if (entity.isDirectory) {
               // Si es una carpeta, navega a la vista de la carpeta
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ViewDrive(folderPath: entity.path),
+                  builder: (context) => ListWithTitles(
+                    folderPath: '${widget.folderPath}/${entity.name}',
+                    connectionManager: widget.connectionManager,
+                  ),
                 ),
               );
             }
           },
           child: ListTile(
             leading: Icon(
-              entity is Directory ? Icons.folder : Icons.insert_drive_file,
+              entity.isDirectory ? Icons.folder : Icons.insert_drive_file,
             ),
             title: EditableTextField(
-              title: entity.path.split('\\').last,
+              title: entity.name,
               onSubmit: (newName) {
+                // Lógica para renombrar (puedes adaptarla según tus necesidades)
                 _renameFile(entity, newName);
               },
             ),
@@ -237,13 +220,10 @@ class _ListWithTitlesState extends State<ListWithTitles> {
       },
     );
   }
-}
 
-bool _isServerFolder(FileSystemEntity entity) {
-  // Aquí verificas si la carpeta contiene archivos o características de un servidor NodeJS o Java
-  if (entity is Directory) {
-    final folderName = entity.path.split('/').last.toLowerCase();
+  bool _isServerFolder(FileSystemEntityMock entity) {
+    // Aquí verificas si la carpeta contiene archivos o características de un servidor NodeJS o Java
+    final folderName = entity.name.toLowerCase();
     return folderName.contains('nodejs') || folderName.contains('java');
   }
-  return false;
 }

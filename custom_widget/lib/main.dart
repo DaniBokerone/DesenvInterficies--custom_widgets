@@ -134,9 +134,14 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
         );
 
         Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ViewDrive(folderPath: 'assets/data')),
-        );
+        context,
+        MaterialPageRoute(
+          builder: (context) => ViewDrive(
+            folderPath: '/home/super', // Tu ruta remota
+            connectionManager: connectionManager, // Pasamos la instancia
+          ),
+        ),
+      );
 
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
