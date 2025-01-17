@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dartssh2/dartssh2.dart';
 
 class ServerConnectionManager {
@@ -154,6 +155,42 @@ class ServerConnectionManager {
     throw Exception("Error mostrando información del archivo o carpeta: $e");
   }
 }
+
+Future<void> uploadFile(String localPath, String remotePath) async {
+  if (_sshClient == null) {
+    throw Exception("SSH Client is not initialized. Call connect() first.");
+  }
+
+  try {
+    final sftp = await _sshClient!.sftp();
+
+    final file = File(localPath);
+
+    if (!file.existsSync()) {
+      throw Exception("No existeix l'arxiu local: $localPath");
+    }
+
+    final sanitizedRemotePath = remotePath.replaceAll(' ', '_');
+
+    final fileStream = file.openRead().map((chunk) => Uint8List.fromList(chunk));
+
+    final remoteFile = await sftp.open(
+      sanitizedRemotePath,
+      mode: SftpFileOpenMode.create | SftpFileOpenMode.write,
+    );
+
+    await remoteFile.write(fileStream);
+    await remoteFile.close();
+    sftp.close();
+
+    print("Arxiu p: $sanitizedRemotePath");
+  } catch (e) {
+    print("Error al pujar el arxiu: $e");
+    throw Exception("Error al pujar el arxiu: $e");
+  }
+}
+
+
 
 
   /// Cerrar la conexión SSH.
