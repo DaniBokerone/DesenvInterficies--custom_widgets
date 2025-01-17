@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:custom_widget/conection.dart';
 import 'package:flutter/material.dart';
 import 'viewDrive.dart'; // Importa la página de detalles
-import 'package:shared_preferences/shared_preferences.dart';
-import 'custom_painters/selected_item_painter.dart'; // Importamos el CustomPainter
+import 'custom_painters/selected_item_painter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,6 +42,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
   final TextEditingController _keyController = TextEditingController();
 
   int? _selectedServerIndex;
+  final String _fileName = 'servers.json';
 
   @override
   void initState() {
@@ -49,19 +50,35 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
     _loadServers();
   }
 
+  Future<String> _getFilePath() async {
+    final directory = Directory.current.path;
+    return '$directory/$_fileName';
+  }
+
   Future<void> _saveServers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final serversJson = json.encode(_servers);
-    await prefs.setString('servers', serversJson);
+    try {
+      final filePath = await _getFilePath();
+      final file = File(filePath);
+      final serversJson = json.encode(_servers);
+      await file.writeAsString(serversJson);
+    } catch (e) {
+      print("Error saving servers: $e");
+    }
   }
 
   Future<void> _loadServers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final serversJson = prefs.getString('servers');
-    if (serversJson != null) {
-      setState(() {
-        _servers.addAll(List<Map<String, dynamic>>.from(json.decode(serversJson)));
-      });
+    try {
+      final filePath = await _getFilePath();
+      final file = File(filePath);
+
+      if (await file.exists()) {
+        final serversJson = await file.readAsString();
+        setState(() {
+          _servers.addAll(List<Map<String, dynamic>>.from(json.decode(serversJson)));
+        });
+      }
+    } catch (e) {
+      print("Error loading servers: $e");
     }
   }
 
@@ -112,7 +129,7 @@ class _ServerConnectionPageState extends State<ServerConnectionPage> {
           selectedServer['port'] == '' ||
           selectedServer['key'] == '') {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Please fill in all the fields')),
+          const SnackBar(content: Text('Please fill in all the fields')),
         );
         return;
       }
