@@ -62,8 +62,8 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     final newPath = '${directory.path}/$newName';
     print(newPath);
     try {
-      // Aquí debes manejar el renombrado de los archivos en el servidor remoto
-      // Implementa la lógica para renombrar en el servidor utilizando connectionManager o una librería adecuada.
+     // Para renombrar un archivo
+      await widget.connectionManager.renameFile(newPath, newName);
       _loadFiles();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,11 +117,10 @@ class _ListWithTitlesState extends State<ListWithTitles> {
         SnackBar(content: Text('Error mostrando información: $e')),
       );
     }
-  }
+  
 
   // ********************************************
-  // Para renombrar un archivo
-// await connectionManager.renameFile('/ruta/remota/archivo.txt', 'nuevoNombre.txt');
+ 
 
 // // Para eliminar un archivo
 // await connectionManager.deleteFile('/ruta/remota/archivo.txt');
@@ -133,7 +132,7 @@ class _ListWithTitlesState extends State<ListWithTitles> {
 // final fileInfo = await connectionManager.showFileInfo('/ruta/remota/archivo.txt');
 // print(fileInfo);
 // ********************************************
-
+}
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
