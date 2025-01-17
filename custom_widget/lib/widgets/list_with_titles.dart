@@ -35,10 +35,11 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     _loadFiles();
   }
 
- Future<void> _loadFiles() async {
+  Future<void> _loadFiles() async {
     try {
       // Llama al método listFiles de connectionManager para obtener los archivos remotos
-      final remoteFiles = await widget.connectionManager.listFiles(widget.folderPath);
+      final remoteFiles =
+          await widget.connectionManager.listFiles(widget.folderPath);
 
       setState(() {
         // Convierte los archivos remotos en un formato adecuado para mostrarlos
@@ -56,14 +57,12 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     }
   }
 
-
   // Renombrar un archivo o carpeta
   Future<void> _renameFile(FileSystemEntityMock entity, String newName) async {
-    final newPath = '${directory.path}/$newName';
-    print(newPath);
+    final originalPath = '${directory.path}/${entity.name}';
     try {
-     // Para renombrar un archivo
-      await widget.connectionManager.renameFile(newPath, newName);
+      // Para renombrar un archivo
+      await widget.connectionManager.renameFile(originalPath, newName);
       _loadFiles();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,9 +73,12 @@ class _ListWithTitlesState extends State<ListWithTitles> {
 
   // Eliminar un archivo o carpeta
   Future<void> _deleteFile(FileSystemEntityMock entity) async {
+    final originalPath = '${directory.path}/${entity.name}';
+
     try {
-      // Aquí debes manejar la eliminación de los archivos en el servidor remoto
-      // Implementa la lógica para eliminar en el servidor utilizando connectionManager o una librería adecuada.
+      // // Para eliminar un archivo
+      await widget.connectionManager.deleteFile(originalPath);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Archivo o carpeta eliminada: ${entity.name}')),
       );
@@ -88,9 +90,12 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     }
   }
 
-  void _downloadFile(FileSystemEntityMock entity) async {
+  Future<void> _downloadFile(FileSystemEntityMock entity) async {
+    final originalPath = '${directory.path}/${entity.name}';
+      final localPath = './downloads/${entity.name}';
     try {
-      // Simula la lógica de descarga de un archivo
+      // Para descargar un archivo
+      await widget.connectionManager.downloadFile(originalPath, localPath);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Descargando archivo: ${entity.name}')),
       );
@@ -103,11 +108,21 @@ class _ListWithTitlesState extends State<ListWithTitles> {
     }
   }
 
-  void _showFileInfo(FileSystemEntityMock entity) {
+  Future<void> _showFileInfo(FileSystemEntityMock entity) async {
+    final originalPath = '${directory.path}/${entity.name}';
+
     try {
+      // Para mostrar información de un archivo
+      final fileInfo =
+          await widget.connectionManager.showFileInfo(originalPath);
+      // print(fileInfo);
+      String permisos = fileInfo.split(' ')[0];
       String info = '';
       info = 'Nombre: ${entity.name}\n'
-          'Tipo: ${entity.isDirectory ? 'Carpeta' : 'Archivo'}';
+          'Tipo: ${entity.isDirectory ? 'Carpeta' : 'Archivo'}\n'
+          'Permisos: $permisos\n'
+          'Tamaño: ${fileInfo.split(' ')[4]} bytes\n'
+          'Fecha de modificación: ${fileInfo.split(' ')[5]} ${fileInfo.split(' ')[6]} ${fileInfo.split(' ')[7]}';
       // Mostrar la información en un SnackBar o cualquier otro widget
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(info)),
@@ -117,22 +132,12 @@ class _ListWithTitlesState extends State<ListWithTitles> {
         SnackBar(content: Text('Error mostrando información: $e')),
       );
     }
-  
 
-  // ********************************************
- 
+    // ********************************************
 
-// // Para eliminar un archivo
-// await connectionManager.deleteFile('/ruta/remota/archivo.txt');
-
-// // Para descargar un archivo
-// await connectionManager.downloadFile('/ruta/remota/archivo.txt', '/ruta/local/archivo.txt');
-
-// // Para mostrar información de un archivo
-// final fileInfo = await connectionManager.showFileInfo('/ruta/remota/archivo.txt');
-// print(fileInfo);
 // ********************************************
-}
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(

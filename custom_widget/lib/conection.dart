@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dartssh2/dartssh2.dart';
 
 class ServerConnectionManager {
@@ -64,6 +65,7 @@ class ServerConnectionManager {
     }
 
     try {
+      print(command);
       final result = await _sshClient!.run(command);
       final output = utf8.decode(result);
       print("Command output: $output");
@@ -130,18 +132,41 @@ class ServerConnectionManager {
     }
   }
 
-  Future<void> downloadFile(String remotePath, String localPath) async {
-    try {
-      // Simulamos la descarga de un archivo desde el servidor
-      print("Descargando archivo desde: $remotePath a $localPath");
 
-      // Aquí puedes implementar la lógica real de descarga,
-      // como usar 'scp' o descargar el archivo usando un paquete adicional de Dart.
-    } catch (e) {
-      print("Error descargando archivo: $e");
-      throw Exception("Error descargando archivo: $e");
+Future<void> downloadFile(String remotePath, String localPath) async {
+  try {
+    // Conexión SFTP
+    final sftp = await _sshClient!.sftp();
+
+    // Abrir archivo remoto para lectura
+    final remoteFile = await sftp.open(remotePath, mode: SftpFileOpenMode.read);
+
+    // Crear archivo local para escritura
+    final localFile = File(localPath);
+
+    // Abrir un Stream de escritura en el archivo local
+    final fileSink = localFile.openWrite();
+
+    // Leer el archivo remoto y escribir en el archivo local
+    await for (final chunk in remoteFile.read(
+      onProgress: (bytesRead) {
+        print('Progreso: $bytesRead bytes leídos');
+      },
+    )) {
+      fileSink.add(chunk);
     }
+
+    // Cerrar el Sink y el archivo remoto
+    await fileSink.close();
+    await remoteFile.close();
+
+
+    print('Archivo descargado correctamente: $localPath');
+  } catch (e) {
+    print('Error durante la descarga del archivo: $e');
   }
+}
+
 
   Future<String> showFileInfo(String remotePath) async {
   try {
@@ -155,6 +180,29 @@ class ServerConnectionManager {
   }
 }
 
+//  // Crear directorio local si no existe
+//     final localDir = Directory(localPath.substring(0, localPath.lastIndexOf('/')));
+//     if (!localDir.existsSync()) {
+//       localDir.createSync(recursive: true);
+//     }
+
+//     // Abrir archivo remoto para lectura
+//     final remoteFile = await sftp.open(remotePath, mode: SftpFileOpenMode.read);
+
+//     // Crear archivo local para escritura
+//     final localFile = File(localPath).openSync(mode: FileMode.write);
+
+//     // Leer el archivo remoto en bloques
+//     const bufferSize = 8192; // Tamaño del buffer
+//     while (true) {
+//       final buffer = await remoteFile.read(); // Leer en bloques
+//       if (await buffer.isEmpty) break; // Salir cuando no haya más datos
+//       localFile.writeFromSync(buffer as List<int>);
+//     }
+
+//     // Cerrar archivos y conexiones
+//     await remoteFile.close();
+//     localFile.closeSync();
 
   /// Cerrar la conexión SSH.
   Future<void> disconnect() async {
