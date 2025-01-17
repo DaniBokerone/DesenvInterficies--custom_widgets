@@ -180,29 +180,41 @@ Future<void> downloadFile(String remotePath, String localPath) async {
   }
 }
 
-//  // Crear directorio local si no existe
-//     final localDir = Directory(localPath.substring(0, localPath.lastIndexOf('/')));
-//     if (!localDir.existsSync()) {
-//       localDir.createSync(recursive: true);
-//     }
 
-//     // Abrir archivo remoto para lectura
-//     final remoteFile = await sftp.open(remotePath, mode: SftpFileOpenMode.read);
+Future<void> uploadFile(String localPath, String remotePath) async {
+  if (_sshClient == null) {
+    throw Exception("SSH Client is not initialized. Call connect() first.");
+  }
 
-//     // Crear archivo local para escritura
-//     final localFile = File(localPath).openSync(mode: FileMode.write);
+  try {
+    final sftp = await _sshClient!.sftp();
 
-//     // Leer el archivo remoto en bloques
-//     const bufferSize = 8192; // Tamaño del buffer
-//     while (true) {
-//       final buffer = await remoteFile.read(); // Leer en bloques
-//       if (await buffer.isEmpty) break; // Salir cuando no haya más datos
-//       localFile.writeFromSync(buffer as List<int>);
-//     }
+    final file = File(localPath);
 
-//     // Cerrar archivos y conexiones
-//     await remoteFile.close();
-//     localFile.closeSync();
+    if (!file.existsSync()) {
+      throw Exception("No existeix l'arxiu local: $localPath");
+    }
+
+    final sanitizedRemotePath = remotePath.replaceAll(' ', '_');
+
+    final fileStream = file.openRead().map((chunk) => Uint8List.fromList(chunk));
+
+    final remoteFile = await sftp.open(
+      sanitizedRemotePath,
+      mode: SftpFileOpenMode.create | SftpFileOpenMode.write,
+    );
+
+    await remoteFile.write(fileStream);
+    await remoteFile.close();
+    sftp.close();
+
+    print("Arxiu p: $sanitizedRemotePath");
+  } catch (e) {
+    print("Error al pujar el arxiu: $e");
+    throw Exception("Error al pujar el arxiu: $e");
+  }
+}
+
 
   /// Cerrar la conexión SSH.
   Future<void> disconnect() async {

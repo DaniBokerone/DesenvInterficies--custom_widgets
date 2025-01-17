@@ -1,15 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'widgets/list_with_titles.dart';
+import 'package:file_picker/file_picker.dart';
 import '../conection.dart';
-
-
+import 'widgets/list_with_titles.dart';
 
 class ViewDrive extends StatefulWidget {
   final String folderPath;
   final ServerConnectionManager connectionManager; // Conexión SSH
 
-   const ViewDrive({super.key, required this.folderPath, required this.connectionManager});
+  const ViewDrive({super.key, required this.folderPath, required this.connectionManager});
 
   @override
   _ViewDriveState createState() => _ViewDriveState();
@@ -23,6 +22,35 @@ class _ViewDriveState extends State<ViewDrive> {
     super.initState();
     directory = Directory(widget.folderPath);
   }
+
+  Future<void> _pickAndUploadFile() async {
+  try {
+    final result = await FilePicker.platform.pickFiles();
+
+    if (result != null && result.files.single.path != null) {
+      final localPath = result.files.single.path!;
+      final fileName = result.files.single.name;
+      final remotePath = '${widget.folderPath}/$fileName';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pujant arxiu...')),
+      );
+
+      await widget.connectionManager.uploadFile(localPath, remotePath);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fitxer pujat amb exit!')),
+      );
+
+      setState(() {});
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error pujant el arxiu: $e')),
+    );
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +125,7 @@ class _ViewDriveState extends State<ViewDrive> {
                         ],
                       ),
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: _pickAndUploadFile,
                         child: const Text('Afegir arxius'),
                       ),
                     ],
@@ -112,7 +140,10 @@ class _ViewDriveState extends State<ViewDrive> {
 
                 // File and Folder List
                 Expanded(
-                  child: ListWithTitles(folderPath: directory.path, connectionManager: widget.connectionManager),
+                  child: ListWithTitles(
+                    folderPath: directory.path,
+                    connectionManager: widget.connectionManager,
+                  ),
                 ),
               ],
             ),
