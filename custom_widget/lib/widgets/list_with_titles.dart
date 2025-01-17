@@ -137,50 +137,51 @@ class _ListWithTitlesState extends State<ListWithTitles> {
 
 // ********************************************
   }
+@override
+Widget build(BuildContext context) {
+  return ListView.builder(
+    itemCount: filesAndFolders.length,
+    itemBuilder: (context, index) {
+      final entity = filesAndFolders[index];
+      final isSelected = _selectedIndex == index;
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: filesAndFolders.length,
-      itemBuilder: (context, index) {
-        final entity = filesAndFolders[index];
-        final isSelected = _selectedIndex == index;
-
-        return GestureDetector(
-          onTap: () {
-            // Verifica si la carpeta es un servidor de tipo NodeJS o Java
-            bool isServer = _isServerFolder(entity);
-            if (isServer) {
-              // Si es un servidor, muestra el widget de control del servidor
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ServerControlWidget(
-                      directory:
-                          Directory('${widget.folderPath}/${entity.name}')),
+      return GestureDetector(
+        onTap: () {
+          bool isServer = _isServerFolder(entity);
+          if (isServer) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ServerControlWidget(
+                  directory: Directory('${widget.folderPath}/${entity.name}'),
+                  onServerStateChanged: (serverInfo) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Servidor actualizado: $serverInfo')),
+                    );
+                  },
                 ),
-              );
-            } else {
-              setState(() {
-                _selectedIndex =
-                    index; // Actualiza el índice del elemento seleccionado
-              });
-            }
-          },
-          onDoubleTap: () {
-            if (entity.isDirectory) {
-              // Si es una carpeta, navega a la vista de la carpeta
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ListWithTitles(
-                    folderPath: '${widget.folderPath}/${entity.name}',
-                    connectionManager: widget.connectionManager,
-                  ),
+              ),
+            );
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
+        },
+        onDoubleTap: () {
+          if (entity.isDirectory) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ListWithTitles(
+                  folderPath: '${widget.folderPath}/${entity.name}',
+                  connectionManager: widget.connectionManager,
                 ),
-              );
-            }
-          },
+              ),
+            );
+          }
+        },
+        child: Material(  // Envuelve ListTile en Material
           child: ListTile(
             leading: Icon(
               entity.isDirectory ? Icons.folder : Icons.insert_drive_file,
@@ -188,7 +189,6 @@ class _ListWithTitlesState extends State<ListWithTitles> {
             title: EditableTextField(
               title: entity.name,
               onSubmit: (newName) {
-                // Lógica para renombrar (puedes adaptarla según tus necesidades)
                 _renameFile(entity, newName);
               },
             ),
@@ -199,14 +199,12 @@ class _ListWithTitlesState extends State<ListWithTitles> {
                       IconButton(
                         icon: const Icon(Icons.download),
                         onPressed: () {
-                          // Lógica de descarga
                           _downloadFile(entity);
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.info),
                         onPressed: () {
-                          // Lógica para mostrar información
                           _showFileInfo(entity);
                         },
                       ),
@@ -220,10 +218,60 @@ class _ListWithTitlesState extends State<ListWithTitles> {
                   )
                 : null,
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
+
+
+
+//   return GestureDetector(
+//   onTap: () {
+//     // Verifica si la carpeta es un servidor de tipo NodeJS o Java
+//     bool isServer = _isServerFolder(entity);
+//     if (isServer) {
+//       // Si es un servidor, muestra el widget de control del servidor
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (context) => ServerControlWidget(
+//             directory: Directory('${widget.folderPath}/${entity.name}'),
+//             onServerStateChanged: (serverInfo) {
+//               // Captura el mensaje del estado del servidor
+//               print('Estado del servidor: $serverInfo');
+//               // Aquí puedes realizar otras acciones según la información capturada
+//               ScaffoldMessenger.of(context).showSnackBar(
+//                 SnackBar(content: Text('Servidor actualizado: $serverInfo')),
+//               );
+//             },
+//           ),
+//         ),
+//       );
+//     } else {
+//       setState(() {
+//         _selectedIndex =
+//             index; // Actualiza el índice del elemento seleccionado
+//       });
+//     }
+//   },
+//   onDoubleTap: () {
+//     if (entity.isDirectory) {
+//       // Si es una carpeta, navega a la vista de la carpeta
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(
+//           builder: (context) => ListWithTitles(
+//             folderPath: '${widget.folderPath}/${entity.name}',
+//             connectionManager: widget.connectionManager,
+//           ),
+//         ),
+//       );
+//     }
+//   },
+// );
+
 
   bool _isServerFolder(FileSystemEntityMock entity) {
     // Aquí verificas si la carpeta contiene archivos o características de un servidor NodeJS o Java

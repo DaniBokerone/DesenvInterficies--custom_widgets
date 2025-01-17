@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 
 class ServerControlWidget extends StatefulWidget {
   final Directory directory;
+  final void Function(Map<String, dynamic> serverInfo) onServerStateChanged;
 
-  const ServerControlWidget({required this.directory, Key? key}) : super(key: key);
+  const ServerControlWidget({
+    required this.directory,
+    required this.onServerStateChanged,
+    Key? key,
+  }) : super(key: key);
 
   @override
   _ServerControlWidgetState createState() => _ServerControlWidgetState();
@@ -26,11 +31,22 @@ class _ServerControlWidgetState extends State<ServerControlWidget> {
     }
   }
 
+  // Función para notificar el cambio de estado al padre
+  void _notifyParent() {
+    final serverType = _detectServerType();
+    widget.onServerStateChanged({
+      'isServer': serverType != 'Unknown',
+      'type': serverType,
+      'active': _isServerRunning,
+    });
+  }
+
   // Función para iniciar el servidor
   void _startServer() {
     setState(() {
       _isServerRunning = true;
     });
+    _notifyParent();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Iniciando servidor...')),
     );
@@ -42,6 +58,7 @@ class _ServerControlWidgetState extends State<ServerControlWidget> {
     setState(() {
       _isServerRunning = true;
     });
+    _notifyParent();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Reiniciando servidor...')),
     );
@@ -53,6 +70,7 @@ class _ServerControlWidgetState extends State<ServerControlWidget> {
     setState(() {
       _isServerRunning = false;
     });
+    _notifyParent();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Deteniendo servidor...')),
     );

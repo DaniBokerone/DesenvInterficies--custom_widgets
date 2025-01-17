@@ -139,10 +139,14 @@ class _ViewDriveState extends State<ViewDrive> {
                 const Divider(),
 
                 // File and Folder List
-                Expanded(
-                  child: ListWithTitles(
-                    folderPath: directory.path,
-                    connectionManager: widget.connectionManager,
+                 Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      return ListWithTitles(
+                        folderPath: directory.path,
+                        connectionManager: widget.connectionManager,
+                      );
+                    },
                   ),
                 ),
               ],
