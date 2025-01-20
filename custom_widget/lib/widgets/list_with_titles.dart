@@ -8,8 +8,14 @@ import '../conection.dart';
 class ListWithTitles extends StatefulWidget {
   late String folderPath;
   final ServerConnectionManager connectionManager;
+  final Function(String newPath)? onPathChanged; // Callback opcional
 
-  ListWithTitles({Key? key, required this.folderPath, required this.connectionManager}) : super(key: key);
+ ListWithTitles({
+    Key? key,
+    required this.folderPath,
+    required this.connectionManager,
+    this.onPathChanged,
+  }) : super(key: key);
 
   @override
   ListWithTitlesState createState() => ListWithTitlesState();
@@ -36,6 +42,7 @@ class ListWithTitlesState extends State<ListWithTitles> {
 
   Future<void> _loadFiles(path) async {
     try {
+
       final remoteFiles =
           await widget.connectionManager.listFiles(path);
 
@@ -48,6 +55,11 @@ class ListWithTitlesState extends State<ListWithTitles> {
                 ))
             .toList();
       });
+
+       // Notificar al padre el cambio de ruta
+    if (widget.onPathChanged != null) {
+      widget.onPathChanged!(path);
+    }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading files: $e')),

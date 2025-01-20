@@ -26,6 +26,33 @@ class _ViewDriveState extends State<ViewDrive> {
     directory = Directory(widget.folderPath);
   }
 
+  void _showExitConfirmation(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Cerrar aplicación"),
+        content: const Text("¿Estás seguro de que deseas salir de la aplicación?"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Cerrar el diálogo
+            },
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () {
+              exit(0); // Cerrar la aplicación
+            },
+            child: const Text("Salir"),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
   Future<void> _pickAndUploadFile() async {
     try {
       final result = await FilePicker.platform.pickFiles();
@@ -74,15 +101,16 @@ class _ViewDriveState extends State<ViewDrive> {
             onPressed: () {
               // Simplemente recargar la vista si es necesario
               // home/super/carpeta_test  ***********
-              final path = '${_listKey.currentState!.actualPath.split('/')[0]}/${_listKey.currentState!.actualPath.split('/')[1]}';
-              print(path);
-              sendMessageToChild(path);
+              // final path =
+              //     '${_listKey.currentState!.actualPath.split('/')[0]}/${_listKey.currentState!.actualPath.split('/')[1]}';
+              print(directory.path);
+              sendMessageToChild(directory.path);
             },
           ),
           IconButton(
             icon: const Icon(Icons.power_settings_new),
             onPressed: () {
-              // Acción para apagado, o lo que sea necesario
+              _showExitConfirmation(context);
             },
           ),
         ],
@@ -133,9 +161,11 @@ class _ViewDriveState extends State<ViewDrive> {
                               // Volver a la carpeta padre
                               final parentPath = directory.parent.path;
                               setState(() {
-                                directory = Directory(parentPath);
+                                directory = Directory(
+                                    parentPath); // Actualiza la ruta en el padre
                               });
-                              sendMessageToChild(parentPath);
+                              sendMessageToChild(
+                                  parentPath); // Envía la nueva ruta al hijo
                             },
                           ),
                           Text(
@@ -173,6 +203,12 @@ class _ViewDriveState extends State<ViewDrive> {
                     key: _listKey, // Asignar el GlobalKey aquí
                     folderPath: directory.path,
                     connectionManager: widget.connectionManager,
+                    onPathChanged: (newPath) {
+                      setState(() {
+                        directory =
+                            Directory(newPath); // Actualiza la ruta en el padre
+                      });
+                    },
                   ),
                 ),
               ],
